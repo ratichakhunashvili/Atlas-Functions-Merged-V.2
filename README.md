@@ -268,6 +268,35 @@ A second pass then audited for code that existed but nothing reached:
 
 ---
 
+## Deploying this to Vercel
+
+This repo is set up to deploy as-is. A few things are specific to a deployment
+rather than local development:
+
+- **Uploads** go to Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set (linking a
+  Blob store to the project injects it automatically) and to local disk
+  otherwise — a deployed site's filesystem is read-only, so it needs Blob for
+  new admin uploads to work at all. Existing seeded images are committed to
+  the repo and served as ordinary static files either way.
+- **The test account and testing shortcuts.** `ENABLE_TEST_TOOLS=true` is not
+  enough by itself in a production build — a second, separately named flag,
+  `ALLOW_TEST_TOOLS_IN_PRODUCTION=true`, must also be set. That is deliberate:
+  no single stray environment variable can leave them on somewhere real by
+  accident. Set the second flag only on a deployment you intend people to
+  actually poke at.
+- **A password wall you control, for one specific gap.** Vercel's own
+  Deployment Protection (password or "Vercel Authentication") only covers a
+  deployment's raw per-build URL and preview URLs on a Hobby plan — it does
+  **not** cover the production alias (`<project>.vercel.app`), which is the
+  link anyone actually shares. Setting `SITE_ACCESS_PASSWORD` closes that gap
+  at the application level: every route redirects to a one-field password form
+  until it's entered (see `lib/site-access.ts` and `proxy.ts`). Leave it unset
+  for local development and for an ordinary deployment behind real Deployment
+  Protection (e.g. on a Pro plan) — it only matters for a Hobby-plan demo
+  reachable at that alias.
+
+See `.env.example` for the full list, with the reasoning for each one.
+
 ## Known limitations
 
 - **Storage is local disk** (`public/uploads/`). Fine for development; swapping

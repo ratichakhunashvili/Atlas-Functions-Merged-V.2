@@ -45,3 +45,6 @@ next-env.d.ts
 # demo serves them as static assets, so leaving them out would mean broken
 # images on every page. New uploads made through the admin go to Vercel Blob,
 # not here, so this directory does not grow on the deployment.
+
+.vercel
+.env*
