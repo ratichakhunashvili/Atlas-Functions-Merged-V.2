@@ -27,11 +27,15 @@ import { writeSeedModels } from "./make-models";
  * insert and never rewritten, so codes printed from an earlier run keep working.
  *
  * The data is shaped to prove the rules rather than to look plausible:
- *   - three hotels with DISJOINT partner sets, so hotel separation is visible;
+ *   - four hotels with DISJOINT partner sets, so hotel separation is visible;
  *   - attractions both inside and well outside the 5 km radius;
  *   - all three check-in modes (GPS, QR, AR) in use;
  *   - achievements on hotels, attractions and partners alike;
  *   - hotel activities everywhere, so every generated day can include one.
+ *
+ * Three hotels sit in Batumi; a fourth, around Rustaveli Avenue / Freedom
+ * Square in Tbilisi, exists so the app can be exercised with real GPS from
+ * that city rather than only the dev test-tools.
  */
 
 const UPLOADS_ROOT = path.join(process.cwd(), "public", "uploads");
@@ -42,6 +46,11 @@ type Place = { lat: number; lng: number };
 const HOTEL_A: Place = { lat: 41.6478, lng: 41.6338 };
 const HOTEL_B: Place = { lat: 41.6512, lng: 41.6421 };
 const HOTEL_C: Place = { lat: 41.6392, lng: 41.6295 };
+
+/** Tbilisi, Georgia — centred on Rustaveli Avenue / Freedom Square, so this
+ *  hotel's data is genuinely walkable for a guest testing with a real phone
+ *  and real GPS in that part of the city, not only with the dev test tools. */
+const HOTEL_D: Place = { lat: 41.6926, lng: 44.802 };
 
 async function upsertUser(username: string, password: string, role: "user" | "admin") {
   const normalized = username.trim().toLowerCase();
@@ -315,6 +324,18 @@ async function main() {
     },
     adminId,
   );
+  const hotelDId = await upsertHotel(
+    {
+      name: "Freedom Square Hotel Tbilisi",
+      description: "City-centre hotel at the top of Rustaveli Avenue, steps from Freedom Square.",
+      address: "Rustaveli Avenue 2, Tbilisi",
+      photo: "b013644f-71eb-49ce-b69c-d75b6387e011.png",
+      location: HOTEL_D,
+      modelPath: models.tower.publicPath,
+      modelHeight: 24,
+    },
+    adminId,
+  );
 
   console.log("Seeding attractions…");
   const attractionSeeds: AttractionSeed[] = [
@@ -518,6 +539,147 @@ async function main() {
       photo: "borjgalo-ethnographic-museum.png",
       location: { lat: 41.67, lng: 41.68 },
     },
+    // --- Tbilisi, around Rustaveli Avenue / Freedom Square ---
+    {
+      name: "Freedom Square",
+      category: "landmark",
+      description: "Central square topped by the gilded Freedom Monument of St. George.",
+      photo: "piazza-batumi.png",
+      location: { lat: 41.6934, lng: 44.8015 },
+      verificationMode: "ar",
+      modelPath: models.obelisk.publicPath,
+      modelHeight: 14,
+    },
+    {
+      name: "Rustaveli Avenue",
+      category: "landmark",
+      description: "The city's grand boulevard of theatres, museums and plane trees.",
+      photo: "batumi-boulevard.png",
+      location: { lat: 41.6965, lng: 44.7995 },
+    },
+    {
+      name: "Georgian National Museum",
+      category: "museum",
+      description: "The Simon Janashia museum — Colchis gold and Bronze Age treasures.",
+      photo: "batumi-archaeological-museum.png",
+      location: { lat: 41.6974, lng: 44.7993 },
+      verificationMode: "qr",
+    },
+    {
+      name: "Parliament of Georgia",
+      category: "historical",
+      description: "The old parliament building, arcaded facade on Rustaveli Avenue.",
+      photo: "neptune-fountain.png",
+      location: { lat: 41.6978, lng: 44.7978 },
+    },
+    {
+      name: "Kashveti Church of St. George",
+      category: "historical",
+      description: "Early-twentieth-century church modelled on an eleventh-century original.",
+      photo: "church-of-holy-spirit.png",
+      location: { lat: 41.6978, lng: 44.7975 },
+    },
+    {
+      name: "Tbilisi Opera and Ballet Theatre",
+      category: "landmark",
+      description: "Moorish-revival theatre, home of the Georgian national opera.",
+      photo: "dancing-fountains.png",
+      location: { lat: 41.6941, lng: 44.8005 },
+      verificationMode: "qr",
+    },
+    {
+      name: "Holy Trinity Cathedral",
+      category: "historical",
+      description: "Sameba — the vast hilltop cathedral overlooking the Mtkvari.",
+      photo: "ashkenazi-synagogue.png",
+      location: { lat: 41.6991, lng: 44.8257 },
+      verificationMode: "qr",
+      modelPath: models.pavilion.publicPath,
+      modelHeight: 28,
+    },
+    {
+      name: "Narikala Fortress",
+      category: "historical",
+      description: "Hilltop fortress above the Old Town, with the Mother of Georgia statue beside it.",
+      photo: "batumi-old-town.png",
+      location: { lat: 41.6886, lng: 44.8086 },
+      verificationMode: "ar",
+      modelPath: models.tower.publicPath,
+      modelHeight: 16,
+    },
+    {
+      name: "Abanotubani",
+      category: "historical",
+      description: "The domed sulfur-bath district beneath Narikala.",
+      photo: "adjara-art-museum.png",
+      location: { lat: 41.6882, lng: 44.8098 },
+    },
+    {
+      name: "Bridge of Peace",
+      category: "landmark",
+      description: "Glass-and-steel pedestrian bridge lit at night, over the Mtkvari.",
+      photo: "alphabet-tower.png",
+      location: { lat: 41.6907, lng: 44.8057 },
+      verificationMode: "ar",
+    },
+    {
+      name: "Rike Park",
+      category: "nature",
+      description: "Riverside park below the bridge, with cable-car views up to Narikala.",
+      photo: "new-boulevard-beach.png",
+      location: { lat: 41.6916, lng: 44.8067 },
+    },
+    {
+      name: "Metekhi Church",
+      category: "historical",
+      description: "Cliffside church across the river, with the equestrian statue of King Vakhtang.",
+      photo: "church-of-holy-spirit.png",
+      location: { lat: 41.6896, lng: 44.8087 },
+    },
+    {
+      name: "Mtatsminda Funicular",
+      category: "landmark",
+      description: "The funicular station climbing Mtatsminda for the city-wide view.",
+      photo: "argo-cable-car.png",
+      location: { lat: 41.6908, lng: 44.7884 },
+      verificationMode: "qr",
+    },
+    {
+      name: "Vake Park",
+      category: "nature",
+      description: "Broad park at the foot of the Trialeti range, a popular evening walk.",
+      photo: "six-may-park.png",
+      location: { lat: 41.7114, lng: 44.7636 },
+    },
+    // --- Tbilisi, deliberately OUTSIDE the 5 km radius ---
+    {
+      name: "Turtle Lake",
+      category: "nature",
+      description: "Reservoir in the hills above Vake — too far for a walking day.",
+      photo: "mtirala-national-park.png",
+      location: { lat: 41.7297, lng: 44.7661 },
+    },
+    {
+      name: "Tbilisi Sea",
+      category: "nature",
+      description: "The city's large reservoir, well out past the northern suburbs.",
+      photo: "sarpi-beach.png",
+      location: { lat: 41.8206, lng: 44.8524 },
+    },
+    {
+      name: "Mtskheta",
+      category: "historical",
+      description: "Georgia's ancient capital, a day-trip rather than a walk from Rustaveli.",
+      photo: "batumi-old-town.png",
+      location: { lat: 41.846, lng: 44.718 },
+    },
+    {
+      name: "Chronicle of Georgia",
+      category: "landmark",
+      description: "Monumental hilltop pillars overlooking the Tbilisi Sea reservoir.",
+      photo: "ali-and-nino-statue.png",
+      location: { lat: 41.8111, lng: 44.8216 },
+    },
   ];
 
   const attractionIds = new Map<string, string>();
@@ -631,9 +793,64 @@ async function main() {
       location: { lat: 41.6538, lng: 41.6392 },
       hotels: [],
     },
+    // --- Tbilisi, all assigned to the Freedom Square hotel ---
+    {
+      name: "Shardeni Street Bistro",
+      category: "restaurant",
+      description: "Georgian small plates on the old town's café-lined pedestrian street.",
+      photo: "sanapiro.png",
+      location: { lat: 41.6915, lng: 44.8027 },
+      address: "Shardeni Street 6, Tbilisi",
+      hotels: ["D"],
+    },
+    {
+      name: "Vinotheque Enoteca",
+      category: "restaurant",
+      description: "Qvevri wine tastings a few minutes from Freedom Square.",
+      photo: "georgian-naturale-wine.png",
+      location: { lat: 41.6928, lng: 44.8008 },
+      hotels: ["D"],
+    },
+    {
+      name: "Abanotubani Sulfur Bathhouse",
+      category: "spa",
+      description: "Private sulfur-bath rooms in the historic bath district.",
+      photo: "eforea-spa.png",
+      location: { lat: 41.688, lng: 44.81 },
+      hotels: ["D"],
+    },
+    {
+      name: "Dry Bridge Antiques",
+      category: "shop",
+      description: "The Sunday flea market's permanent stalls of Soviet antiques and art.",
+      photo: "batumi-bazaar.png",
+      location: { lat: 41.6986, lng: 44.7936 },
+      hotels: ["D"],
+    },
+    {
+      name: "Old Tbilisi Walking Tour",
+      category: "tour",
+      description: "Two-hour guided walk from Freedom Square through the Old Town.",
+      photo: "batumi-walking-tour.png",
+      location: { lat: 41.694, lng: 44.802 },
+      hotels: ["D"],
+    },
+    {
+      name: "Funicular Café",
+      category: "restaurant",
+      description: "Coffee and khachapuri at the foot of the Mtatsminda funicular.",
+      photo: "seaside-cafe.png",
+      location: { lat: 41.6908, lng: 44.7884 },
+      hotels: ["D"],
+    },
   ];
 
-  const hotelsByKey: Record<string, string> = { A: hotelAId, B: hotelBId, C: hotelCId };
+  const hotelsByKey: Record<string, string> = {
+    A: hotelAId,
+    B: hotelBId,
+    C: hotelCId,
+    D: hotelDId,
+  };
   const partnerIds = new Map<string, string>();
   for (const seed of partnerSeeds) {
     const partnerId = await upsertPartner(seed, adminId);
@@ -656,16 +873,23 @@ async function main() {
   await upsertActivity(hotelCId, "Harbour Pool", "pool", "Outdoor pool facing the harbour.");
   await upsertActivity(hotelCId, "Morning Gym", "gym", "Compact gym on the ground floor.");
 
+  await upsertActivity(hotelDId, "City View Restaurant", "restaurant", "Rooftop dining overlooking Freedom Square.");
+  await upsertActivity(hotelDId, "Wellness Spa", "spa", "Treatment rooms with Mtatsminda views.");
+  await upsertActivity(hotelDId, "Fitness Room", "gym", "Open 24 hours to guests.");
+
   console.log("Seeding hotel events…");
   await upsertEvent(hotelAId, "Live jazz on the terrace", "Trio playing standards.", 2);
   await upsertEvent(hotelAId, "Georgian wine tasting", "Six qvevri wines with the sommelier.", 5);
   await upsertEvent(hotelBId, "Khachapuri workshop", "Make Adjaruli khachapuri with the chef.", 3);
   await upsertEvent(hotelCId, "Sunset harbour walk", "Guided walk along the new boulevard.", 1);
+  await upsertEvent(hotelDId, "Georgian polyphonic singing night", "A cappella ensemble performing traditional polyphony.", 4);
+  await upsertEvent(hotelDId, "Khinkali and wine evening", "Hand-folded khinkali paired with Kakhetian wine.", 7);
 
   console.log("Seeding achievements…");
   await upsertAchievement("hotel", hotelAId, "Seaside Grand guest", "Unlocked the Seaside Grand Batumi.");
   await upsertAchievement("hotel", hotelBId, "Old Town guest", "Unlocked the Old Town Boutique Batumi.");
   await upsertAchievement("hotel", hotelCId, "Harbour View guest", "Unlocked the Harbour View Batumi.");
+  await upsertAchievement("hotel", hotelDId, "Rustaveli guest", "Unlocked the Freedom Square Hotel Tbilisi.");
 
   const attractionAchievements: [string, string, string][] = [
     ["Alphabet Tower", "Alphabet climber", "Found the tower that spells Georgian in steel."],
@@ -683,6 +907,20 @@ async function main() {
     ["Argo Cable Car", "Above the bay", "Rode the Argo cable car."],
     ["Batumi Dolphinarium", "Dolphin watcher", "Visited the dolphinarium."],
     ["360 Sky Bar", "Full rotation", "Made it to the rotating sky bar."],
+    ["Freedom Square", "Column climber", "Stood beneath Tbilisi's Freedom Monument."],
+    ["Rustaveli Avenue", "Avenue walker", "Walked the length of Rustaveli Avenue."],
+    ["Georgian National Museum", "Colchis treasure hunter", "Visited the Georgian National Museum."],
+    ["Parliament of Georgia", "Capitol visitor", "Stood before the Parliament of Georgia."],
+    ["Kashveti Church of St. George", "Kashveti visitor", "Visited the Kashveti Church of St. George."],
+    ["Tbilisi Opera and Ballet Theatre", "Opera goer", "Visited the Tbilisi Opera and Ballet Theatre."],
+    ["Holy Trinity Cathedral", "Sameba pilgrim", "Visited the Holy Trinity Cathedral."],
+    ["Narikala Fortress", "Fortress climber", "Reached Narikala Fortress."],
+    ["Abanotubani", "Sulfur bather", "Explored the Abanotubani bath district."],
+    ["Bridge of Peace", "Peace crosser", "Crossed the Bridge of Peace."],
+    ["Rike Park", "Rike regular", "Relaxed in Rike Park."],
+    ["Metekhi Church", "Cliffside visitor", "Visited Metekhi Church."],
+    ["Mtatsminda Funicular", "Mountain rider", "Rode the Mtatsminda Funicular."],
+    ["Vake Park", "Vake wanderer", "Walked through Vake Park."],
   ];
   const namedAchievements = new Map(
     attractionAchievements.map(([attractionName, name, description]) => [
@@ -700,6 +938,10 @@ async function main() {
     "Mtirala National Park",
     "Sarpi Beach",
     "Borjgalo Ethnographic Museum",
+    "Turtle Lake",
+    "Tbilisi Sea",
+    "Mtskheta",
+    "Chronicle of Georgia",
   ]);
 
   for (const seed of attractionSeeds) {
@@ -724,6 +966,12 @@ async function main() {
     ["Metro City Mall", "Retail therapy", "Checked in at Metro City Mall."],
     ["Porto Franco", "Catch of the day", "Checked in at Porto Franco."],
     ["Adjara Spa", "Thermal", "Checked in at the Adjara Spa."],
+    ["Shardeni Street Bistro", "Shardeni regular", "Checked in at Shardeni Street Bistro."],
+    ["Vinotheque Enoteca", "Qvevri taster", "Checked in at Vinotheque Enoteca."],
+    ["Abanotubani Sulfur Bathhouse", "Thermal soak", "Checked in at the Abanotubani Sulfur Bathhouse."],
+    ["Dry Bridge Antiques", "Flea market finder", "Checked in at Dry Bridge Antiques."],
+    ["Old Tbilisi Walking Tour", "Guided through Tbilisi", "Joined the Old Tbilisi walking tour."],
+    ["Funicular Café", "Funicular regular", "Checked in at Funicular Café."],
   ];
   for (const [partnerName, name, description] of partnerAchievements) {
     const id = partnerIds.get(partnerName);
@@ -731,10 +979,11 @@ async function main() {
   }
 
   console.log("\nSeed complete.");
-  console.log(`  hotels:       3 (${attractionSeeds.length} attractions, ${partnerSeeds.length} partners)`);
-  console.log("  partner sets: Seaside Grand / Old Town / Harbour View are disjoint");
+  console.log(`  hotels:       4 (${attractionSeeds.length} attractions, ${partnerSeeds.length} partners)`);
+  console.log("  Batumi:       Seaside Grand / Old Town / Harbour View — disjoint partner sets");
+  console.log("  Tbilisi:      Freedom Square Hotel, around Rustaveli Avenue");
   console.log("  4 partners are intentionally unassigned and must never appear for a guest");
-  console.log("  4 attractions sit outside the 5 km radius on purpose");
+  console.log(`  ${outOfRange.size} attractions sit outside their hotel's 5 km radius on purpose`);
   console.log("\n  Test account:  ratichak / 01024072661  (admin)");
   console.log("  Plain guest:   testguest / testguest-local-only  (user)");
 }

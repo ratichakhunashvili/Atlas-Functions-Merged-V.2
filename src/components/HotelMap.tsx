@@ -1,8 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 // Aliased: an unqualified `Map` import would shadow the global `Map` constructor.
-import MapGL, { Marker, Popup, NavigationControl, Source, Layer } from "react-map-gl/mapbox";
+import MapGL, {
+  Marker,
+  Popup,
+  NavigationControl,
+  GeolocateControl,
+  Source,
+  Layer,
+} from "react-map-gl/mapbox";
+import { describeGeolocateError, isGeolocationAvailable, GEOLOCATION_UNAVAILABLE_MESSAGE } from "@/lib/geolocate";
 import Image from "next/image";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { MAPBOX_TOKEN } from "@/lib/mapbox";
@@ -12,7 +20,7 @@ import type { RouteLineString } from "@/lib/route-engine";
 import dynamic from "next/dynamic";
 import GroundedLayer, { type GroundedItem } from "@/components/map3d/GroundedLayer";
 import { Badge } from "@/components/ui";
-import { CubeIcon } from "@/components/icons";
+import { CubeIcon, PinIcon } from "@/components/icons";
 
 // WebGL-only, and only needed once someone opens a place — keep it out of the
 // initial bundle and away from SSR.
@@ -80,6 +88,21 @@ export default function HotelMap({
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   /** The place whose standalone 3D viewer is open, if any. */
   const [viewerKey, setViewerKey] = useState<string | null>(null);
+  const [locateError, setLocateError] = useState<string | null>(null);
+  // Starts `true` so the server-rendered markup and the client's first
+  // hydration pass agree — `isGeolocationAvailable()` reads `window`, which
+  // doesn't exist on the server, so it can only be checked after mount.
+  const [geolocationAvailable, setGeolocationAvailable] = useState(true);
+
+  useEffect(() => {
+    // Reads `window`, so it can only be checked after mount — the server (and
+    // the client's first hydration pass) always render the optimistic
+    // "available" default above. A one-time read of a browser-only
+    // capability, not state derived from render inputs the way this lint rule
+    // usually guards against.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!isGeolocationAvailable()) setGeolocationAvailable(false);
+  }, []);
 
   const unlocked = useMemo(() => new Set(unlockedKeys), [unlockedKeys]);
 
@@ -139,6 +162,30 @@ export default function HotelMap({
         maxPitch={75}
       >
         <NavigationControl position="top-right" visualizePitch />
+
+        {/* The "find myself on the map" control: a single familiar button that
+         * asks for location permission, flies the camera to the guest's real
+         * position, and draws the standard pulsing blue dot with an accuracy
+         * circle. `trackUserLocation` keeps it following as they walk, which
+         * is exactly what a walking itinerary wants — it only stops following
+         * once the guest manually pans the map, which is Mapbox's own built-in
+         * behaviour here, not something this app has to manage. */}
+        {/* Omitted entirely — rather than shown disabled — when geolocation
+         * can never work here (most commonly: this page was opened over a
+         * network IP rather than localhost/https, which browsers treat as an
+         * insecure origin). A button that can only ever fail is worse than no
+         * button; the reason is explained in the banner below instead. */}
+        {geolocationAvailable && (
+          <GeolocateControl
+            position="top-right"
+            trackUserLocation
+            showUserHeading
+            showAccuracyCircle
+            positionOptions={{ enableHighAccuracy: true }}
+            onGeolocate={() => setLocateError(null)}
+            onError={(event) => setLocateError(describeGeolocateError(event))}
+          />
+        )}
 
         <GroundedLayer layerId="places-3d" items={groundedItems} onPick={setSelectedKey} />
 
@@ -263,14 +310,39 @@ export default function HotelMap({
         </div>
       )}
 
-      {route?.legError && (
-        <div className="pointer-events-none absolute inset-x-3 bottom-3 rounded-xl bg-red-600/95 px-3 py-2 text-xs text-white shadow-lg">
-          {route.legError}
+      {(route?.legError || locateError) && (
+        <div className="pointer-events-none absolute inset-x-3 bottom-3 space-y-1.5">
+          {route?.legError && (
+            <div className="rounded-xl bg-red-600/95 px-3 py-2 text-xs text-white shadow-lg">
+              {route.legError}
+            </div>
+          )}
+          {locateError && (
+            <div className="rounded-xl bg-amber-600/95 px-3 py-2 text-xs text-white shadow-lg">
+              {locateError}
+            </div>
+          )}
         </div>
       )}
 
-      <div className="pointer-events-none absolute left-3 top-3 rounded-lg bg-white/90 px-2.5 py-1 text-xs font-medium text-zinc-700 shadow dark:bg-zinc-900/90 dark:text-zinc-200">
-        {hotelName}
+      <div className="pointer-events-none absolute left-3 top-3 flex flex-col items-start gap-1">
+        <span className="rounded-lg bg-white/90 px-2.5 py-1 text-xs font-medium text-zinc-700 shadow dark:bg-zinc-900/90 dark:text-zinc-200">
+          {hotelName}
+        </span>
+        {/* The geolocate button's icon alone isn't obvious the first time, and
+         * it only carries an aria-label, no visible hover tooltip — so this
+         * names it once. Kept on the opposite side from the map's own
+         * top-right controls, so it can never overlap them regardless of how
+         * tall that control stack renders. */}
+        {geolocationAvailable ? (
+          <span className="rounded-lg bg-white/90 px-2 py-1 text-[11px] leading-tight text-zinc-600 shadow dark:bg-zinc-900/90 dark:text-zinc-300">
+            <PinIcon className="inline h-3 w-3 align-text-bottom" /> finds you on the map
+          </span>
+        ) : (
+          <span className="max-w-[12rem] rounded-lg bg-amber-100 px-2 py-1 text-[11px] leading-tight text-amber-800 shadow dark:bg-amber-950/80 dark:text-amber-300">
+            {GEOLOCATION_UNAVAILABLE_MESSAGE}
+          </span>
+        )}
       </div>
     </div>
   );
